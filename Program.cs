@@ -45,6 +45,22 @@ public static class Program
     {
         AppDomain.CurrentDomain.ProcessExit += CurrentDomain_ProcessExit;
 
+        if (!File.Exists("EscapeFromTarkov.exe"))
+        {
+            Log("Unable to find 'EscapeFromTarkov.exe'.\n" +
+                "Make sure you are running Fika Headless Manager from a valid SPT install folder!", ConsoleColor.Red);
+            Console.ReadKey(true);
+            Environment.Exit(1);
+        }
+
+        if (!File.Exists(@"BepInEx\plugins\Fika\Fika.Headless.dll"))
+        {
+            Log("Unable to find 'Fika.Headless.dll'.\n" +
+                "Please revisit the documentation and install Fika Headless using Fika-Installer!", ConsoleColor.Red);
+            Console.ReadKey(true);
+            Environment.Exit(1);
+        }
+
         const string configPath = "HeadlessConfig.json";
         if (!File.Exists(configPath))
         {
