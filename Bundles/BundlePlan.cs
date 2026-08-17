@@ -1,27 +1,23 @@
-using System.Collections.Concurrent;
-
 namespace FikaHeadlessManager.Bundles;
 
 public sealed class BundlePlan
 {
-    internal ConcurrentDictionary<string, BundleCacheEntry> Verified { get; } = [];
-
-    internal List<BundleManifestItem> Stale { get; } = [];
+    internal List<BundleManifestItem> Missing { get; } = [];
 
     public int Total { get; internal set; }
 
-    public int Cached
+    public int Present
     {
-        get { return Total - Stale.Count; }
+        get { return Total - Missing.Count; }
     }
 
-    public int Missing
+    public int MissingCount
     {
-        get { return Stale.Count; }
+        get { return Missing.Count; }
     }
 
     public long MissingBytes
     {
-        get { return Stale.Sum(bundle => bundle.Size); }
+        get { return Missing.Sum(bundle => bundle.Size); }
     }
 }

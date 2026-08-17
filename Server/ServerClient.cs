@@ -29,11 +29,6 @@ public sealed class ServerClient : IDisposable
         _client = new HttpClient(handler);
     }
 
-    public bool IsLocal
-    {
-        get { return _backendUrl.IsLoopback; }
-    }
-
     public async Task<bool> IsAccessibleAsync(CancellationToken token = default)
     {
         try

@@ -63,12 +63,6 @@ public sealed class HeadlessRunner(
 
     private async Task<bool> AcquireBundlesAsync()
     {
-        if (server.IsLocal)
-        {
-            logger.LogInformation("Server is local, bundles are loaded in place and need no acquisition.");
-            return true;
-        }
-
         var plan = await AnsiConsole.Status().StartAsync("Verifying bundles...", _ => bundles.PlanAsync());
 
         if (plan == null)
@@ -82,14 +76,14 @@ public sealed class HeadlessRunner(
             return true;
         }
 
-        if (plan.Missing == 0)
+        if (plan.MissingCount == 0)
         {
-            logger.LogInformation("All {Total} bundle(s) are cached.", plan.Total);
-            return await bundles.AcquireAsync(plan, null);
+            logger.LogInformation("All {Total} bundle(s) are already present.", plan.Total);
+            return true;
         }
 
-        logger.LogInformation("{Cached} of {Total} bundle(s) cached, {Missing} to download ({Size}).",
-            plan.Cached, plan.Total, plan.Missing, BundleProgress.FormatBytes(plan.MissingBytes));
+        logger.LogInformation("{Present} of {Total} bundle(s) present, {Missing} to download ({Size}).",
+            plan.Present, plan.Total, plan.MissingCount, BundleProgress.FormatBytes(plan.MissingBytes));
 
         return await AnsiConsole.Progress()
             .AutoClear(false)
@@ -113,7 +107,7 @@ public sealed class HeadlessRunner(
                         : $"{Markup.Escape(Path.GetFileName(report.BundleName))} [grey]({report.Current}/{report.Total}, {report.FileSizeInfo}, {report.DownloadSpeed})[/]";
                 });
 
-                return await bundles.AcquireAsync(plan, progress);
+                return await bundles.DownloadAsync(plan, progress);
             });
     }
 
