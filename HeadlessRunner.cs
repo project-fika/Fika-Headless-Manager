@@ -1,4 +1,4 @@
-using FikaHeadlessManager.Bundles;
+﻿using FikaHeadlessManager.Bundles;
 using FikaHeadlessManager.Models;
 using FikaHeadlessManager.Patching;
 using FikaHeadlessManager.Server;
@@ -6,6 +6,7 @@ using Microsoft.Extensions.Logging;
 using Spectre.Console;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using System.Runtime.InteropServices;
 
 namespace FikaHeadlessManager;
 
@@ -16,18 +17,21 @@ public sealed class HeadlessRunner(
     PatchService patcher,
     BundleService bundles)
 {
+    private readonly PosixSignal[] _stopSignals = [PosixSignal.SIGINT, PosixSignal.SIGQUIT, PosixSignal.SIGTERM, PosixSignal.SIGHUP];
+    private readonly List<PosixSignalRegistration> _signals = [];
+    private readonly Lock _stopLock = new();
+
     private Process? _tarkovProcess;
     private bool _withGraphics;
 
     public async Task RunAsync()
     {
-        AppDomain.CurrentDomain.ProcessExit += (_, _) =>
+        AppDomain.CurrentDomain.ProcessExit += (_, _) => StopGame();
+
+        foreach (var signal in _stopSignals)
         {
-            if (_tarkovProcess is { HasExited: false })
-            {
-                _tarkovProcess.Kill(true);
-            }
-        };
+            _signals.Add(PosixSignalRegistration.Create(signal, _ => StopGame()));
+        }
 
         if (!patcher.PatchClient())
         {
@@ -178,6 +182,21 @@ public sealed class HeadlessRunner(
         }
 
         return false;
+    }
+
+    private void StopGame()
+    {
+        lock (_stopLock)
+        {
+            try
+            {
+                if (_tarkovProcess is { HasExited: false })
+                {
+                    _tarkovProcess.Kill(true);
+                }
+            }
+            catch (Exception) {}
+        }
     }
 
     [DoesNotReturn]
