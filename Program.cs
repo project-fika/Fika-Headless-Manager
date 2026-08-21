@@ -1,4 +1,4 @@
-using FikaHeadlessManager.Bundles;
+﻿using FikaHeadlessManager.Bundles;
 using FikaHeadlessManager.Logging;
 using FikaHeadlessManager.Models;
 using FikaHeadlessManager.Patching;
@@ -13,8 +13,10 @@ namespace FikaHeadlessManager;
 
 public static class Program
 {
-    private static async Task Main()
+    private static async Task Main(string[] args)
     {
+        var prepareOnly = ParseArguments(args);
+
         var settings = await LoadSettings();
 
         if (!string.IsNullOrEmpty(settings.Title))
@@ -34,7 +36,25 @@ public static class Program
             .AddSingleton<HeadlessRunner>()
             .BuildServiceProvider();
 
-        await services.GetRequiredService<HeadlessRunner>().RunAsync();
+        await services.GetRequiredService<HeadlessRunner>().RunAsync(prepareOnly);
+    }
+
+    private static bool ParseArguments(string[] args)
+    {
+        var prepareOnly = false;
+
+        foreach (var arg in args)
+        {
+            if (arg.Equals("--prepare", StringComparison.OrdinalIgnoreCase))
+            {
+                prepareOnly = true;
+                continue;
+            }
+
+            Fatal($"Unknown argument '{arg}'." + Environment.NewLine + "Usage: FikaHeadlessManager [--prepare]");
+        }
+
+        return prepareOnly;
     }
 
     private static async Task<Settings> LoadSettings()

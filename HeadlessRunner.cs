@@ -24,7 +24,7 @@ public sealed class HeadlessRunner(
     private Process? _tarkovProcess;
     private bool _withGraphics;
 
-    public async Task RunAsync()
+    public async Task RunAsync(bool prepareOnly)
     {
         AppDomain.CurrentDomain.ProcessExit += (_, _) => StopGame();
 
@@ -48,6 +48,12 @@ public sealed class HeadlessRunner(
             if (!await AcquireBundlesAsync())
             {
                 Exit();
+            }
+
+            if (prepareOnly)
+            {
+                logger.LogInformation("The client is patched and bundles are in place, exiting..");
+                return;
             }
 
             _withGraphics = await WaitForGraphicsInput();
